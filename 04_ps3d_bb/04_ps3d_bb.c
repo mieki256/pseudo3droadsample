@@ -1,4 +1,4 @@
-// Last updated: <2024/03/15 08:41:51 +0900>
+// Last updated: <2024/03/16 08:23:13 +0900>
 //
 // Draw pseudo 3D road by OpenGL with Texture. Add billboard.
 //
@@ -88,6 +88,8 @@ typedef enum sprtype
   SPR_SLOPEL,   // 19
   SPR_SLOPER,   // 20
   SPR_WALL,     // 21
+  SPR_DELI0,    // 22
+  SPR_DELI1,    // 23
 } SPRTYPE;
 
 // ----------------------------------------
@@ -99,7 +101,7 @@ typedef struct b2stbl
   float h;
 } B2STBL;
 
-static B2STBL b2s_tbl[22] = {
+static B2STBL b2s_tbl[24] = {
     // idx, w, h
     {0, 0, 0},       // 0 None
     {0, 450, 450},   // 1 tree 0
@@ -123,6 +125,8 @@ static B2STBL b2s_tbl[22] = {
     {18, 500, 500},  // 19 slope L
     {19, 500, 500},  // 20 slope R
     {20, 2800, 700}, // 21 wall 0
+    {21, 20, 40},    // 22 delinator 0
+    {22, 20, 40},    // 23 delinator 1
 };
 
 // ----------------------------------------
@@ -135,7 +139,7 @@ typedef struct texpos
   float h;
 } TEXPOS;
 
-static TEXPOS tex_pos[21] = {
+static TEXPOS tex_pos[23] = {
     // x, y, w, h
     {0.25 * 0, 0.0, 0.25, 0.125},       // 0 tree 0
     {0.25 * 1, 0.0, 0.25, 0.125},       // 1 tree 1
@@ -158,6 +162,8 @@ static TEXPOS tex_pos[21] = {
     {0.25 * 0, 0.125 * 5, 0.25, 0.125}, // 18 slope L
     {0.25 * 1, 0.125 * 5, 0.25, 0.125}, // 19 slope R
     {0.5, 0.625, 0.5, 0.0625},          // 20 wall 0
+    {0.0, 0.3125, 0.0625, 0.0625},      // 21 delineator 0
+    {0.0625, 0.3125, 0.0625, 0.0625},   // 22 delineator 1
 };
 
 // ----------------------------------------
@@ -239,6 +245,7 @@ typedef struct dt
   SPRTYPE sprkind;
   float sprx;
   float sprscale;
+  int deli;
 } DT;
 
 // ----------------------------------------
@@ -929,10 +936,20 @@ void update(void)
     float a = (float)((16 - 1) - (i % 16));
     float x = cx + gw.shift_cam_x;
     float y = cy + gw.road_y;
+    int deli = 0;
+    if (i < (gw.seg_max * 3 / 4))
+    {
+      deli = (i % 30 == 0) ? 1 : 0;
+    }
+    else
+    {
+      deli = (i % 20 == 0) ? 2 : 0;
+    }
     gw.dt[k].x = x;
     gw.dt[k].y = y;
     gw.dt[k].z = cz;
     gw.dt[k].attr = a;
+    gw.dt[k].deli = deli;
     gw.dt[k].idx = i;
     gw.dt[k].sprkind = gw.segdata[i].sprkind;
     gw.dt[k].sprx = gw.segdata[i].sprx;
@@ -1182,13 +1199,14 @@ void draw_road(void)
   {
     float x0, y0, z0, a0, x1, y1, z1;
     float sprx, sprscale;
-    int i2, sprkind, tidx;
+    int i2, sprkind, tidx, deli;
 
     i2 = i - 1;
     x0 = gw.dt[i].x;
     y0 = gw.dt[i].y;
     z0 = gw.dt[i].z;
     a0 = gw.dt[i].attr;
+    deli = gw.dt[i].deli;
     x1 = gw.dt[i2].x;
     y1 = gw.dt[i2].y;
     z1 = gw.dt[i2].z;
@@ -1249,6 +1267,15 @@ void draw_road(void)
     }
 
     draw_billboard(sprkind, sprx, sprscale, x0, y0, z0);
+
+    if (deli != 0)
+    {
+      // draw delinator
+      SPRTYPE sk = (deli == 1) ? SPR_DELI0 : SPR_DELI1;
+      float sx = w * 1.05;
+      draw_billboard(sk, -sx, 1.0, x0, y0, z0);
+      draw_billboard(sk, +sx, 1.0, x0, y0, z0);
+    }
 
     if (i < (VIEW_DIST - 2))
       draw_car(tidx);
