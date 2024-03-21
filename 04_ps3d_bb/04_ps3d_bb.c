@@ -1,4 +1,4 @@
-// Last updated: <2024/03/19 02:56:23 +0900>
+// Last updated: <2024/03/21 05:08:27 +0900>
 //
 // Draw pseudo 3D road by OpenGL with Texture. Add billboard.
 //
@@ -40,8 +40,14 @@
 #define SCRH 720
 
 // texture image filename
-#define BG_IMG "bg.jpg"
+#define BG0_IMG "bg_summer.jpg"
+#define BG1_IMG "bg_autumn.jpg"
+#define BG2_IMG "bg_winter.jpg"
+#define BG3_IMG "bg_night.jpg"
+
 #define SPRITES_IMG "sprites.png"
+#define SPRTEXIMG_W (4096.0)
+#define SPRTEXIMG_H (4096.0)
 
 // Number of segments to draw
 #define VIEW_DIST 200
@@ -76,33 +82,88 @@ typedef enum bbtype
 } BBTYPE;
 
 // ----------------------------------------
+// stage type
+typedef enum stagetype
+{
+  STG_SUMMER, // 0
+  STG_AUTUMN, // 1
+  STG_WINTER, // 2
+  STG_NIGHT,  // 3
+} STAGETYPE;
+
+// ----------------------------------------
 // sprite type
 typedef enum sprtype
 {
-  SPR_NONE,     // 0
-  SPR_TREE0,    // 1
-  SPR_TREE1,    // 2
-  SPR_TREE2,    // 3
-  SPR_TREE3,    // 4
-  SPR_ARROWR2L, // 5
-  SPR_ARROWL2R, // 6
-  SPR_GRASS,    // 7
-  SPR_BEAM,     // 8
-  SPR_SCOOTER,  // 9
-  SPR_CAR0,     // 10
-  SPR_CAR1,     // 11
-  SPR_CAR2,     // 12
-  SPR_HOUSE0L,  // 13
-  SPR_HOUSE0R,  // 14
-  SPR_HOUSE1L,  // 15
-  SPR_HOUSE1R,  // 16
-  SPR_HOUSE2L,  // 17
-  SPR_HOUSE2R,  // 18
-  SPR_SLOPEL,   // 19
-  SPR_SLOPER,   // 20
-  SPR_WALL,     // 21
-  SPR_DELI0,    // 22
-  SPR_DELI1,    // 23
+
+  SPR_NONE,      // 0
+  SPR_TREE0_0,   // 1
+  SPR_TREE0_1,   // 2
+  SPR_TREE0_2,   // 3
+  SPR_TREE0_3,   // 4
+  SPR_TREE1_0,   // 5
+  SPR_TREE1_1,   // 6
+  SPR_TREE1_2,   // 7
+  SPR_TREE1_3,   // 8
+  SPR_TREE2_0,   // 9
+  SPR_TREE2_1,   // 10
+  SPR_TREE2_2,   // 11
+  SPR_TREE2_3,   // 12
+  SPR_TREE3_0,   // 13
+  SPR_TREE3_1,   // 14
+  SPR_TREE3_2,   // 15
+  SPR_TREE3_3,   // 16
+  SPR_SLOPE0_L,  // 17
+  SPR_SLOPE0_R,  // 18
+  SPR_SLOPE1_L,  // 19
+  SPR_SLOPE1_R,  // 20
+  SPR_SLOPE2_L,  // 21
+  SPR_SLOPE2_R,  // 22
+  SPR_SLOPE3_L,  // 23
+  SPR_SLOPE3_R,  // 24
+  SPR_WALL0,     // 25
+  SPR_WALL1,     // 26
+  SPR_WALL2,     // 27
+  SPR_WALL3,     // 28
+  SPR_GRASS0,    // 29
+  SPR_GRASS1,    // 30
+  SPR_GRASS2,    // 31
+  SPR_GRASS3,    // 32
+  SPR_SCOOTER0,  // 33
+  SPR_SCOOTER1,  // 34
+  SPR_SCOOTER3,  // 35
+  SPR_CAR0_0,    // 36
+  SPR_CAR0_1,    // 37
+  SPR_CAR0_2,    // 38
+  SPR_CAR3_0,    // 39
+  SPR_CAR3_1,    // 40
+  SPR_CAR3_2,    // 41
+  SPR_HOUSE0_0L, // 42
+  SPR_HOUSE0_0R, // 43
+  SPR_HOUSE0_1L, // 44
+  SPR_HOUSE0_1R, // 45
+  SPR_HOUSE0_2L, // 46
+  SPR_HOUSE0_2R, // 47
+  SPR_HOUSE2_0L, // 48
+  SPR_HOUSE2_0R, // 49
+  SPR_HOUSE2_1L, // 50
+  SPR_HOUSE2_1R, // 51
+  SPR_HOUSE2_2L, // 52
+  SPR_HOUSE2_2R, // 53
+  SPR_HOUSE3_0L, // 54
+  SPR_HOUSE3_0R, // 55
+  SPR_HOUSE3_1L, // 56
+  SPR_HOUSE3_1R, // 57
+  SPR_HOUSE3_2L, // 58
+  SPR_HOUSE3_2R, // 59
+  SPR_BEAM,      // 60
+  SPR_ARROWR2L,  // 61
+  SPR_ARROWL2R,  // 62
+  SPR_DELI0,     // 63
+  SPR_DELI1,     // 64
+  SPR_ROAD0,     // 65
+  SPR_ROAD1,     // 66
+  SPR_ROAD2,     // 67
 } SPRTYPE;
 
 // ----------------------------------------
@@ -117,32 +178,86 @@ typedef struct sprtbl
   float vh;
 } SPRTBL;
 
-static SPRTBL spr_tbl[24] = {
+static SPRTBL spr_tbl[68] = {
     // poly w, poly h, u, v, uw, vh
-    {0, 0, 0.0, 0.0, 0.0, 0.0},                   // 0 None
-    {450, 450, 0.25 * 0, 0.0, 0.25, 0.125},       // 1 tree 0
-    {450, 450, 0.25 * 1, 0.0, 0.25, 0.125},       // 2 tree 1
-    {450, 450, 0.25 * 2, 0.0, 0.25, 0.125},       // 3 tree 2
-    {450, 450, 0.25 * 3, 0.0, 0.25, 0.125},       // 4 tree 3
-    {200, 200, 0.25 * 0, 0.125, 0.25, 0.125},     // 5 arrow sign R to L
-    {200, 200, 0.25 * 1, 0.125, 0.25, 0.125},     // 6 arrow sign L to R
-    {200, 50, 0.25 * 0, 0.25, 0.25, 0.125 / 4},   // 7 grass
-    {1000, 500, 0.5, 0.125, 0.5, 0.125},          // 8 beam
-    {35, 70, 0.25, 0.25, 0.125, 0.125},           // 9 scooter
-    {100, 100, 0.25 * 0, 0.125 * 3, 0.25, 0.125}, // 10 car 0
-    {100, 100, 0.25 * 1, 0.125 * 3, 0.25, 0.125}, // 11 car 1
-    {100, 100, 0.25 * 2, 0.125 * 3, 0.25, 0.125}, // 12 car 2
-    {500, 500, 0.25 * 2, 0.25, 0.25, 0.125},      // 13 house 0 L
-    {500, 500, 0.25 * 3, 0.25, 0.25, 0.125},      // 14 house 0 R
-    {500, 500, 0.25 * 0, 0.5, 0.25, 0.125},       // 15 house 1 L
-    {500, 500, 0.25 * 1, 0.5, 0.25, 0.125},       // 16 house 1 R
-    {600, 300, 0.5, 0.5, 0.25, 0.0625},           // 17 house 2 L
-    {600, 300, 0.5, 0.5625, 0.25, 0.0625},        // 18 house 2 R
-    {500, 500, 0.25 * 0, 0.125 * 5, 0.25, 0.125}, // 19 slope L
-    {500, 500, 0.25 * 1, 0.125 * 5, 0.25, 0.125}, // 20 slope R
-    {2800, 700, 0.5, 0.625, 0.5, 0.0625},         // 21 wall 0
-    {20, 40, 0.0, 0.3125, 0.0625, 0.0625},        // 22 delinator 0
-    {20, 40, 0.0625, 0.3125, 0.0625, 0.0625},     // 23 delinator 1
+    {0, 0, 0.000000, 0.000000, 0.000000, 0.000000},      // 0 SPR_NONE
+    {450, 450, 0.000000, 0.000000, 0.125000, 0.125000},  // 1 SPR_TREE0_0
+    {450, 450, 0.125000, 0.000000, 0.125000, 0.125000},  // 2 SPR_TREE0_1
+    {450, 450, 0.250000, 0.000000, 0.125000, 0.125000},  // 3 SPR_TREE0_2
+    {450, 450, 0.375000, 0.000000, 0.125000, 0.125000},  // 4 SPR_TREE0_3
+    {450, 450, 0.000000, 0.125000, 0.125000, 0.125000},  // 5 SPR_TREE1_0
+    {450, 450, 0.125000, 0.125000, 0.125000, 0.125000},  // 6 SPR_TREE1_1
+    {450, 450, 0.250000, 0.125000, 0.125000, 0.125000},  // 7 SPR_TREE1_2
+    {450, 450, 0.375000, 0.125000, 0.125000, 0.125000},  // 8 SPR_TREE1_3
+    {450, 450, 0.000000, 0.250000, 0.125000, 0.125000},  // 9 SPR_TREE2_0
+    {450, 450, 0.125000, 0.250000, 0.125000, 0.125000},  // 10 SPR_TREE2_1
+    {450, 450, 0.250000, 0.250000, 0.125000, 0.125000},  // 11 SPR_TREE2_2
+    {450, 450, 0.375000, 0.250000, 0.125000, 0.125000},  // 12 SPR_TREE2_3
+    {450, 450, 0.000000, 0.375000, 0.125000, 0.125000},  // 13 SPR_TREE3_0
+    {450, 450, 0.125000, 0.375000, 0.125000, 0.125000},  // 14 SPR_TREE3_1
+    {450, 450, 0.250000, 0.375000, 0.125000, 0.125000},  // 15 SPR_TREE3_2
+    {450, 450, 0.375000, 0.375000, 0.125000, 0.125000},  // 16 SPR_TREE3_3
+    {500, 500, 0.500000, 0.000000, 0.125000, 0.125000},  // 17 SPR_SLOPE0_L
+    {500, 500, 0.625000, 0.000000, 0.125000, 0.125000},  // 18 SPR_SLOPE0_R
+    {500, 500, 0.500000, 0.125000, 0.125000, 0.125000},  // 19 SPR_SLOPE1_L
+    {500, 500, 0.625000, 0.125000, 0.125000, 0.125000},  // 20 SPR_SLOPE1_R
+    {500, 500, 0.500000, 0.250000, 0.125000, 0.125000},  // 21 SPR_SLOPE2_L
+    {500, 500, 0.625000, 0.250000, 0.125000, 0.125000},  // 22 SPR_SLOPE2_R
+    {500, 500, 0.500000, 0.375000, 0.125000, 0.125000},  // 23 SPR_SLOPE3_L
+    {500, 500, 0.625000, 0.375000, 0.125000, 0.125000},  // 24 SPR_SLOPE3_R
+    {2800, 700, 0.750000, 0.000000, 0.250000, 0.062500}, // 25 SPR_WALL0
+    {2800, 700, 0.750000, 0.125000, 0.250000, 0.062500}, // 26 SPR_WALL1
+    {2800, 700, 0.750000, 0.250000, 0.250000, 0.062500}, // 27 SPR_WALL2
+    {2800, 700, 0.750000, 0.375000, 0.250000, 0.062500}, // 28 SPR_WALL3
+    {200, 50, 0.750000, 0.062500, 0.125000, 0.031250},   // 29 SPR_GRASS0
+    {200, 50, 0.750000, 0.187500, 0.125000, 0.031250},   // 30 SPR_GRASS1
+    {200, 50, 0.750000, 0.312500, 0.125000, 0.031250},   // 31 SPR_GRASS2
+    {200, 50, 0.750000, 0.437500, 0.125000, 0.031250},   // 32 SPR_GRASS3
+    {35, 70, 0.000000, 0.500000, 0.062500, 0.125000},    // 33 SPR_SCOOTER0
+    {35, 70, 0.062500, 0.500000, 0.062500, 0.125000},    // 34 SPR_SCOOTER1
+    {35, 70, 0.125000, 0.500000, 0.062500, 0.125000},    // 35 SPR_SCOOTER3
+    {100, 100, 0.250000, 0.500000, 0.125000, 0.125000},  // 36 SPR_CAR0_0
+    {100, 100, 0.375000, 0.500000, 0.125000, 0.125000},  // 37 SPR_CAR0_1
+    {100, 100, 0.500000, 0.500000, 0.125000, 0.125000},  // 38 SPR_CAR0_2
+    {100, 100, 0.625000, 0.500000, 0.125000, 0.125000},  // 39 SPR_CAR3_0
+    {100, 100, 0.750000, 0.500000, 0.125000, 0.125000},  // 40 SPR_CAR3_1
+    {100, 100, 0.875000, 0.500000, 0.125000, 0.125000},  // 41 SPR_CAR3_2
+    {500, 375, 0.000000, 0.625000, 0.125000, 0.093750},  // 42 SPR_HOUSE0_0L
+    {500, 375, 0.125000, 0.625000, 0.125000, 0.093750},  // 43 SPR_HOUSE0_0R
+    {500, 375, 0.250000, 0.625000, 0.125000, 0.093750},  // 44 SPR_HOUSE0_1L
+    {500, 375, 0.375000, 0.625000, 0.125000, 0.093750},  // 45 SPR_HOUSE0_1R
+    {600, 300, 0.500000, 0.625000, 0.125000, 0.062500},  // 46 SPR_HOUSE0_2L
+    {600, 300, 0.500000, 0.687500, 0.125000, 0.062500},  // 47 SPR_HOUSE0_2R
+    {500, 375, 0.000000, 0.718750, 0.125000, 0.093750},  // 48 SPR_HOUSE2_0L
+    {500, 375, 0.125000, 0.718750, 0.125000, 0.093750},  // 49 SPR_HOUSE2_0R
+    {500, 375, 0.250000, 0.718750, 0.125000, 0.093750},  // 50 SPR_HOUSE2_1L
+    {500, 375, 0.375000, 0.718750, 0.125000, 0.093750},  // 51 SPR_HOUSE2_1R
+    {600, 300, 0.500000, 0.750000, 0.125000, 0.062500},  // 52 SPR_HOUSE2_2L
+    {600, 300, 0.500000, 0.812500, 0.125000, 0.062500},  // 53 SPR_HOUSE2_2R
+    {500, 375, 0.000000, 0.812500, 0.125000, 0.093750},  // 54 SPR_HOUSE3_0L
+    {500, 375, 0.125000, 0.812500, 0.125000, 0.093750},  // 55 SPR_HOUSE3_0R
+    {500, 375, 0.250000, 0.812500, 0.125000, 0.093750},  // 56 SPR_HOUSE3_1L
+    {500, 375, 0.375000, 0.812500, 0.125000, 0.093750},  // 57 SPR_HOUSE3_1R
+    {600, 300, 0.625000, 0.625000, 0.125000, 0.062500},  // 58 SPR_HOUSE3_2L
+    {600, 300, 0.625000, 0.687500, 0.125000, 0.062500},  // 59 SPR_HOUSE3_2R
+    {1000, 500, 0.750000, 0.625000, 0.250000, 0.125000}, // 60 SPR_BEAM
+    {100, 150, 0.875000, 0.906250, 0.062500, 0.093750},  // 61 SPR_ARROWR2L
+    {100, 150, 0.937500, 0.906250, 0.062500, 0.093750},  // 62 SPR_ARROWL2R
+    {20, 40, 0.812500, 0.937500, 0.031250, 0.062500},    // 63 SPR_DELI0
+    {20, 40, 0.843750, 0.937500, 0.031250, 0.062500},    // 64 SPR_DELI1
+    {256, 256, 0.531250, 0.906250, 0.062500, 0.062500},  // 65 SPR_ROAD0
+    {256, 256, 0.656250, 0.906250, 0.062500, 0.062500},  // 66 SPR_ROAD1
+    {256, 256, 0.437500, 0.937500, 0.062500, 0.062500},  // 67 SPR_ROAD2
+};
+
+// ----------------------------------------
+// road texture uv position
+static float road_uv[4][4] = {
+    // u, v, uw, uh
+    {0.531250, 0.906250, 0.062500, 0.062500}, // stage 0
+    {0.531250, 0.906250, 0.062500, 0.062500}, // stage 1
+    {0.531250, 0.906250, 0.062500, 0.062500}, // stage 2
+    {0.656250, 0.906250, 0.062500, 0.062500}, // stage 3
 };
 
 // ----------------------------------------
@@ -272,7 +387,7 @@ typedef struct gwk
   int cars_len;
   CARS cars[4];
 
-  GLuint bg_tex;
+  GLuint bg_tex[4];
   GLuint spr_tex;
 
   int step;
@@ -288,6 +403,7 @@ typedef struct gwk
 
   int disable_tree;
   int disable_slope;
+  STAGETYPE stage_num;
 
   // FPS check
   double rec_time;
@@ -567,6 +683,7 @@ void init_work_first(void)
 
   gw.disable_tree = DISABLE_TREE;
   gw.disable_slope = DISABLE_SLOPE;
+  gw.stage_num = rand() % 4;
 }
 
 void init_work(void)
@@ -820,6 +937,29 @@ void expand_segdata(void)
   }
 }
 
+static SPRTYPE house_tbl[4][2][3] = {
+    {
+        // stage 0
+        {SPR_HOUSE0_0L, SPR_HOUSE0_1L, SPR_HOUSE0_2L},
+        {SPR_HOUSE0_0R, SPR_HOUSE0_1R, SPR_HOUSE0_2R},
+    },
+    {
+        // stage 1
+        {SPR_HOUSE0_0L, SPR_HOUSE0_1L, SPR_HOUSE0_2L},
+        {SPR_HOUSE0_0R, SPR_HOUSE0_1R, SPR_HOUSE0_2R},
+    },
+    {
+        // stage 2
+        {SPR_HOUSE2_0L, SPR_HOUSE2_1L, SPR_HOUSE2_2L},
+        {SPR_HOUSE2_0R, SPR_HOUSE2_1R, SPR_HOUSE2_2R},
+    },
+    {
+        // stage 3
+        {SPR_HOUSE3_0L, SPR_HOUSE3_1L, SPR_HOUSE3_2L},
+        {SPR_HOUSE3_0R, SPR_HOUSE3_1R, SPR_HOUSE3_2R},
+    },
+};
+
 void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float *spr_scale)
 {
   *spr_kind = 0;
@@ -838,7 +978,7 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
   switch (bbkind)
   {
   case BB_TREE:
-    *spr_kind = SPR_TREE0 + (rand() % 4);
+    *spr_kind = SPR_TREE0_0 + (rand() % 4) + (gw.stage_num * 4);
     *spr_x = (float)(rand() % 450) + gw.road_w + 150.0;
     if (rand() % 2 == 0)
       *spr_x *= -1.0;
@@ -847,17 +987,17 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
 
   case BB_ARROWR:
   case BB_ARROWL:
-    if (j % 4 == 0)
+    if (j % 4 == 2)
     {
       // arrow sign
       *spr_kind = SPR_ARROWR2L + (bbkind - BB_ARROWR);
-      *spr_x = gw.road_w + 120.0;
+      *spr_x = gw.road_w + 150.0;
     }
     else
     {
       // grass
-      *spr_kind = SPR_GRASS;
-      *spr_x = (rand() % 100) + gw.road_w + 120.0;
+      *spr_kind = SPR_GRASS0 + (gw.stage_num * 1);
+      *spr_x = gw.road_w + 150.0 + (rand() % 60) - 30;
     }
     if (bbkind == BB_ARROWL)
       *spr_x *= -1.0;
@@ -865,7 +1005,7 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
     break;
 
   case BB_GRASS:
-    *spr_kind = SPR_GRASS;
+    *spr_kind = SPR_GRASS0 + (gw.stage_num * 1);
     *spr_x = (rand() % 300) + gw.road_w + 250.0;
     if (rand() % 2 == 0)
       *spr_x *= -1.0;
@@ -886,18 +1026,9 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
       // house
       *spr_x = -(float)(gw.road_w + 450 + rand() % 100);
       *spr_scale = 1.0;
-      if (rand() % 2 == 0)
-      {
-        // house L
-        *spr_kind = SPR_HOUSE0L;
-      }
-      else
-      {
-        // house R
-        *spr_kind = SPR_HOUSE0R;
-        *spr_x *= -1.0;
-      }
-      *spr_kind += (rand() % 3) * 2;
+      int lr = (rand() % 2 == 0) ? 0 : 1;
+      *spr_kind = house_tbl[gw.stage_num][lr][rand() % 3];
+      *spr_x *= ((lr == 0) ? 1.0 : -1.0);
     }
     else
     {
@@ -905,7 +1036,7 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
       if (j % 2 == 0)
       {
         // tree
-        *spr_kind = SPR_TREE0 + (rand() % 4);
+        *spr_kind = SPR_TREE0_0 + (rand() % 4) + (gw.stage_num * 4);
         *spr_x = (float)(rand() % 500) + gw.road_w + 400.0;
         if (rand() % 2 == 0)
           *spr_x *= -1.0;
@@ -924,7 +1055,7 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
     if (j == 0)
     {
       // trees wall
-      *spr_kind = SPR_WALL;
+      *spr_kind = SPR_WALL0 + (gw.stage_num * 1);
       *spr_x = -(gw.road_w * 6.0);
     }
     else
@@ -932,13 +1063,13 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
       if (j % 2 == 0)
       {
         // slope L
-        *spr_kind = SPR_SLOPEL;
+        *spr_kind = SPR_SLOPE0_L + (gw.stage_num * 2);
         *spr_x = -(gw.road_w * 1.5);
       }
       else
       {
         // tree
-        *spr_kind = SPR_TREE0 + (rand() % 4);
+        *spr_kind = SPR_TREE0_0 + (rand() % 4) + (gw.stage_num * 4);
         *spr_x = (float)(rand() % 600) + gw.road_w + 300.0;
         *spr_scale = (float)(100 + rand() % 100) * 0.01;
       }
@@ -950,7 +1081,7 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
     if (j == 0)
     {
       // trees wall
-      *spr_kind = SPR_WALL;
+      *spr_kind = SPR_WALL0 + (gw.stage_num * 1);
       *spr_x = (gw.road_w * 6.0);
     }
     else
@@ -958,13 +1089,13 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
       if (j % 2 == 0)
       {
         // slope R
-        *spr_kind = SPR_SLOPER;
+        *spr_kind = SPR_SLOPE0_R + (gw.stage_num * 2);
         *spr_x = (gw.road_w * 1.5);
       }
       else
       {
         // tree
-        *spr_kind = SPR_TREE0 + (rand() % 4);
+        *spr_kind = SPR_TREE0_0 + (rand() % 4) + (gw.stage_num * 4);
         *spr_x = -((float)(rand() % 600) + gw.road_w + 300.0);
         *spr_scale = (float)(100 + rand() % 100) * 0.01;
       }
@@ -976,21 +1107,16 @@ void set_billboard(BBTYPE bbkind, int j, SPRTYPE *spr_kind, float *spr_x, float 
   }
 }
 
+static char *bgimgs[4] = {
+    BG0_IMG,
+    BG1_IMG,
+    BG2_IMG,
+    BG3_IMG,
+};
+
 void load_image(void)
 {
   // load texture image file. use SOIL
-  gw.bg_tex = SOIL_load_OGL_texture(BG_IMG, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO);
-  if (gw.bg_tex > 0)
-  {
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, gw.bg_tex);
-  }
-  else
-  {
-    errmsg("Cannot load bg image");
-    glDisable(GL_TEXTURE_2D);
-  }
-
   gw.spr_tex = SOIL_load_OGL_texture(SPRITES_IMG, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO);
   if (gw.spr_tex > 0)
   {
@@ -1005,6 +1131,21 @@ void load_image(void)
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
+
+  for (int i = 0; i < 4; i++)
+  {
+    gw.bg_tex[i] = SOIL_load_OGL_texture(bgimgs[i], SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO);
+    if (gw.bg_tex[i] > 0)
+    {
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, gw.bg_tex[i]);
+    }
+    else
+    {
+      errmsg("Cannot load bg image");
+      glDisable(GL_TEXTURE_2D);
+    }
+  }
 }
 
 void update(float delta)
@@ -1042,6 +1183,7 @@ void update(float delta)
       gw.fadev = 1.0;
       gw.laps = 0;
       gw.step = 0;
+      gw.stage_num = (gw.stage_num + 1) % 4;
     }
     break;
   default:
@@ -1163,6 +1305,13 @@ void update_bg_pos(float delta, float curve, float pitch)
     gw.bg_y = 1.0;
 }
 
+static const SPRTYPE cars_spr_tbl[4][4] = {
+    {SPR_SCOOTER0, SPR_CAR0_0, SPR_CAR0_1, SPR_CAR0_2}, // stage 0
+    {SPR_SCOOTER1, SPR_CAR0_0, SPR_CAR0_1, SPR_CAR0_2}, // stage 1
+    {SPR_SCOOTER1, SPR_CAR0_0, SPR_CAR0_1, SPR_CAR0_2}, // stage 2
+    {SPR_SCOOTER3, SPR_CAR3_0, SPR_CAR3_1, SPR_CAR3_2}, // stage 3
+};
+
 void update_cars(float delta)
 {
   gw.angle += ((gw.spd * 1.0) * gw.framerate * delta);
@@ -1172,6 +1321,7 @@ void update_cars(float delta)
     float d, rx;
     int kind = gw.cars[i].kind;
     gw.cars[i].y = 0.0;
+    gw.cars[i].sprkind = cars_spr_tbl[gw.stage_num][kind];
 
     switch (kind)
     {
@@ -1179,25 +1329,21 @@ void update_cars(float delta)
       // scooter
       d = 170.0;
       rx = gw.road_w * 0.5;
-      gw.cars[i].sprkind = SPR_SCOOTER;
       gw.cars[i].x = -rx * 1.35 + (rx * 0.25) * sin(0.035 * deg2rad(gw.angle));
       gw.cars[i].z = gw.camera_z + d + (20.0 * sin(0.1 * deg2rad(gw.angle)));
       break;
     case 1:
       d = 300.0;
-      gw.cars[i].sprkind = SPR_CAR0;
       gw.cars[i].x = -gw.road_w * 0.25;
       gw.cars[i].z = gw.camera_z + d + 150.0 * sin(0.02 * deg2rad(gw.angle));
       break;
     case 2:
-      gw.cars[i].sprkind = SPR_CAR1;
       gw.cars[i].x = gw.road_w * 0.25;
       gw.cars[i].z -= ((gw.spd_max * 0.25) * gw.framerate * delta);
       if (gw.cars[i].z < 0.0)
         gw.cars[i].z += gw.seg_total_length;
       break;
     case 3:
-      gw.cars[i].sprkind = SPR_CAR2;
       gw.cars[i].x = gw.road_w * 0.7;
       gw.cars[i].z -= ((gw.spd_max * 0.2) * gw.framerate * delta);
       if (gw.cars[i].z < 0.0)
@@ -1279,7 +1425,7 @@ void draw_bg(void)
   glDisable(GL_CULL_FACE);
   glLoadIdentity();
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, gw.bg_tex);
+  glBindTexture(GL_TEXTURE_2D, gw.bg_tex[gw.stage_num]);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1337,6 +1483,13 @@ void draw_car(int i)
   }
 }
 
+static float gndcol[4][2][4] = {
+    {{0.45, 0.70, 0.25, 1}, {0.10, 0.68, 0.25, 1}}, // stage 0
+    {{0.80, 0.60, 0.40, 1}, {0.70, 0.50, 0.30, 1}}, // stage 1
+    {{0.95, 0.95, 0.95, 1}, {0.80, 0.80, 0.80, 1}}, // stage 2
+    {{0.10, 0.20, 0.05, 1}, {0.05, 0.15, 0.02, 1}}, // stage 3
+};
+
 void draw_road(void)
 {
   glEnable(GL_CULL_FACE);
@@ -1355,6 +1508,14 @@ void draw_road(void)
   w = gw.road_w;
   tanv = tan(deg2rad(gw.fovy) / 2.0);
   aspect = (float)gw.scrw / (float)gw.scrh;
+  int sn = gw.stage_num;
+
+  // get road texture u, v, uw, uh
+  float ru, rv, ruw, rvh;
+  ru = road_uv[gw.stage_num][0];
+  rv = road_uv[gw.stage_num][1];
+  ruw = road_uv[gw.stage_num][2];
+  rvh = road_uv[gw.stage_num][3];
 
   for (int i = VIEW_DIST - 1; i >= 1; i--)
   {
@@ -1380,17 +1541,12 @@ void draw_road(void)
     if (1)
     {
       float gndw0, gndw1;
+      int cn;
       gndw0 = tanv * z0 * aspect;
       gndw1 = tanv * z1 * aspect;
       glDisable(GL_TEXTURE_2D);
-      if ((int)(a0 / 4) % 2 == 0)
-      {
-        glColor4f(0.45, 0.70, 0.25, 1);
-      }
-      else
-      {
-        glColor4f(0.10, 0.68, 0.25, 1);
-      }
+      cn = ((int)(a0 / 4) % 2 == 0) ? 0 : 1;
+      glColor4f(gndcol[sn][cn][0], gndcol[sn][cn][1], gndcol[sn][cn][2], gndcol[sn][cn][3]);
       glBegin(GL_QUADS);
       glVertex3f(+gndw0, y0, -z0);
       glVertex3f(-gndw0, y0, -z0);
@@ -1402,16 +1558,12 @@ void draw_road(void)
     // draw road
     {
       float u0, u1, v0, v1;
-      u0 = 0.125;
-
-      // debug
-      // u0 += 0.25;
-
-      u1 = u0 + 0.125;
-      v0 = a0 * (1.0 / 16.0);
-      v1 = v0 + (1.0 / 16.0);
-      v0 = v0 * (1.0 / 16.0) + (1.0 / 16.0) * 13;
-      v1 = v1 * (1.0 / 16.0) + (1.0 / 16.0) * 13;
+      u0 = ru;
+      u1 = u0 + ruw;
+      v0 = a0 * rvh;
+      v1 = v0 + rvh;
+      v0 = v0 * rvh + rv;
+      v1 = v1 * rvh + rv;
 
       glEnable(GL_TEXTURE_2D);
       glBegin(GL_QUADS);
@@ -1473,23 +1625,18 @@ void draw_billboard(int spkind, float spx, float spscale, float cx0, float y0, f
   int n;
   float w, h, u0, v0, u1, v1, x, y, z, ud, vd;
 
-  switch (spkind)
+  if (gw.disable_tree != 0)
   {
-  case SPR_TREE0:
-  case SPR_TREE1:
-  case SPR_TREE2:
-  case SPR_TREE3:
-    if (gw.disable_tree != 0)
-      spkind = SPR_GRASS;
-    break;
-  case SPR_SLOPEL:
-  case SPR_SLOPER:
-  case SPR_WALL:
-    if (gw.disable_slope != 0)
-      spkind = SPR_GRASS;
-    break;
-  default:
-    break;
+    if (spkind >= SPR_TREE0_0 && spkind <= SPR_TREE3_3)
+      spkind = SPR_GRASS0 + (gw.stage_num * 1);
+  }
+
+  if (gw.disable_slope != 0)
+  {
+    if (spkind >= SPR_SLOPE0_L && spkind <= SPR_SLOPE3_R)
+      spkind = SPR_GRASS0 + (gw.stage_num * 1);
+    if (spkind >= SPR_WALL0 && spkind <= SPR_WALL3)
+      spkind = SPR_GRASS0 + (gw.stage_num * 1);
   }
 
   w = (spr_tbl[spkind].w / 2) * spscale;
@@ -1497,8 +1644,8 @@ void draw_billboard(int spkind, float spx, float spscale, float cx0, float y0, f
   if (w == 0.0 || h == 0.0)
     return;
 
-  ud = (1.0 / 2048.0);
-  vd = (1.0 / 4096.0);
+  ud = (1.0 / SPRTEXIMG_W);
+  vd = (1.0 / SPRTEXIMG_H);
   u0 = spr_tbl[spkind].u + ud * 0.5;
   v0 = spr_tbl[spkind].v + vd * 0.5;
   u1 = u0 + spr_tbl[spkind].uw - ud * 1.0;
